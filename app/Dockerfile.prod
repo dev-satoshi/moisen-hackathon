@@ -1,0 +1,73 @@
+###########
+# BUILDER #
+###########
+
+# ベースイメージを指定
+FROM python:3.11.4-slim-buster as builder
+
+# コンテナ内での作業ディレクトリを設定
+WORKDIR /usr/src/app
+
+# 環境変数を設定
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# システムの依存関係をインストール
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends gcc
+
+# Lintをインストール
+RUN pip install --upgrade pip
+RUN pip install flake8==6.0.0
+COPY . /usr/src/app/
+RUN flake8 --ignore=E501,F401 .
+
+# 依存関係をインストール
+COPY ./requirements.txt .
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
+
+
+#########
+# FINAL #
+#########
+
+# ベースイメージを指定
+FROM python:3.11.4-slim-buster
+
+# ディレクトリを作成
+RUN mkdir -p /home/app
+
+# グループとユーザーを作成
+RUN addgroup --system app && adduser --system --group app
+
+# 環境変数の設定、ディレクトリの作成、作業ディレクトリを指定
+ENV HOME=/home/app
+ENV APP_HOME=/home/app/web
+RUN mkdir $APP_HOME
+RUN mkdir $APP_HOME/staticfiles
+RUN mkdir $APP_HOME/mediafiles
+WORKDIR $APP_HOME
+
+# ビルドステージからコピーしたファイルを使用して、依存関係をインストールする
+RUN apt-get update && apt-get install -y --no-install-recommends netcat
+COPY --from=builder /usr/src/app/wheels /wheels
+COPY --from=builder /usr/src/app/requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install --no-cache /wheels/*
+
+# entrypoint.shを作業ディレクトリにコピー
+COPY ./entrypoint.prod.sh .
+RUN sed -i 's/\r$//g'  $APP_HOME/entrypoint.prod.sh
+RUN chmod +x  $APP_HOME/entrypoint.prod.sh
+
+# appディレクトリ内の全てのファイルを$APP_HOMEにコピー
+COPY . $APP_HOME
+
+# $APP_HOMEディレクトリの所有者をappユーザー、グループの所有者をappグループに変更
+RUN chown -R app:app $APP_HOME
+
+# ユーザーを切り替える
+USER app
+
+# コンテナが起動された際にシェルを実行する
+ENTRYPOINT ["/home/app/web/entrypoint.prod.sh"]
