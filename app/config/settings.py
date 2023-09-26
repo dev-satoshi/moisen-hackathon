@@ -27,12 +27,19 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # "django.contrib.sites",
     # サードパーティ
     "allauth",
+    # "allauth.account",
+    "crispy_forms",
+    "crispy_bootstrap5",
     # ローカル
     "medicine",
     "accounts",
 ]
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -42,6 +49,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -158,6 +166,9 @@ ACCOUNT_LOGOUT_ON_GET = True
 
 # httpsを使用する場合
 # ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
+
+# django-allauthの認証方法を設定
+AUTHENTICATION_BACKENDS = ("allauth.account.auth_backends.AuthenticationBackend",)
 
 
 # Email settings
