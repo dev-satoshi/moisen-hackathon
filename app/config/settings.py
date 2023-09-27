@@ -30,7 +30,7 @@ INSTALLED_APPS = [
     # "django.contrib.sites",
     # サードパーティ
     "allauth",
-    # "allauth.account",
+    "allauth.account",
     "crispy_forms",
     "crispy_bootstrap5",
     # ローカル
